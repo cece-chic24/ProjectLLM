@@ -9,6 +9,7 @@ from typing import Any
 from core.errors import TranscriptionError
 from core.models import TranscriptResult, TranscriptSegment
 from transcription.base import TranscriptionProvider
+from transcription.transcript_store import save_transcript
 
 
 ModelFactory = Callable[..., Any]
@@ -23,11 +24,13 @@ class FasterWhisperTranscriber(TranscriptionProvider):
         device: str = "cpu",
         compute_type: str = "int8",
         model_factory: ModelFactory | None = None,
+        transcript_output_path: str | Path | None = None,
     ) -> None:
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
         self._model_factory = model_factory
+        self._transcript_output_path = Path(transcript_output_path) if transcript_output_path is not None else None
         self._model: Any | None = None
         self._validate_runtime_options()
 
@@ -46,7 +49,7 @@ class FasterWhisperTranscriber(TranscriptionProvider):
         except Exception as exc:
             raise TranscriptionError(f"faster-whisper transcription failed: {exc}") from exc
 
-        return TranscriptResult(
+        result = TranscriptResult(
             source_path=source_path,
             text=" ".join(segment.text.strip() for segment in segments if segment.text.strip()),
             language=info.language,
@@ -56,6 +59,9 @@ class FasterWhisperTranscriber(TranscriptionProvider):
             device=self.device,
             compute_type=self.compute_type,
         )
+        if self._transcript_output_path is not None:
+            save_transcript(result, self._transcript_output_path)
+        return result
 
     def _load_model(self) -> Any:
         if self._model is None:
@@ -79,4 +85,3 @@ class FasterWhisperTranscriber(TranscriptionProvider):
             raise TranscriptionError(
                 'Invalid faster-whisper configuration: compute_type="float16" is not supported on device="cpu".'
             )
-
