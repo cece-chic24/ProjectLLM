@@ -1,0 +1,2 @@
+"""AI note generation package."""
+
