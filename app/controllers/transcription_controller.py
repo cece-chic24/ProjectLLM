@@ -11,6 +11,7 @@ from transcription.base import TranscriptionProvider
 
 
 TranscriptionFactory = Callable[..., TranscriptionProvider]
+BeforeTranscribe = Callable[[], None]
 
 
 class TranscriptionController:
@@ -20,9 +21,11 @@ class TranscriptionController:
         self,
         transcription_provider: TranscriptionProvider | None = None,
         transcription_factory: TranscriptionFactory | None = None,
+        before_transcribe: BeforeTranscribe | None = None,
     ) -> None:
         self._transcription_provider = transcription_provider
         self._transcription_factory = transcription_factory
+        self._before_transcribe = before_transcribe
 
     def transcribe(
         self,
@@ -32,6 +35,8 @@ class TranscriptionController:
         compute_type: str = "int8",
     ) -> TranscriptResult:
         try:
+            if self._before_transcribe is not None:
+                self._before_transcribe()
             provider = self._resolve_provider(model_size, device, compute_type)
             return provider.transcribe(audio_file_path)
         except TranscriptionError:
