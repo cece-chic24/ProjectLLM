@@ -98,6 +98,22 @@ class MainWindowTests(unittest.TestCase):
         self.assertFalse(window._delete_button.isEnabled())
         self.assertIsNone(window._get_current_session())
 
+    def test_window_routes_note_generation_failure_to_note_view(self) -> None:
+        workspace = FakeWorkspaceController()
+        controllers = SimpleNamespace(
+            workspace=workspace,
+            transcription=FakeTranscriptionController(),
+            note=FakeNoteController(),
+            export=FakeExportController(),
+        )
+        window = MainWindow(controllers)  # type: ignore[arg-type]
+
+        window._handle_note_failed("Note generation is not configured.")
+
+        self.assertEqual(window._note_view_panel._meta_label.text(), "Note generation failed.")
+        self.assertEqual(window._note_view_panel._text_edit.toPlainText(), "Note generation is not configured.")
+        self.assertFalse(window._note_view_panel._export_button.isEnabled())
+
 
 if __name__ == "__main__":
     unittest.main()

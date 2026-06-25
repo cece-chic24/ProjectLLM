@@ -1,5 +1,6 @@
 """Thin application controllers."""
 
+from core.errors import NoteGenerationError
 from core.models import NoteType, SessionInfo, TranscriptResult, TranscriptSegment
 
 from app.controllers.factories import Phase1Controllers, create_phase1_controllers
@@ -15,6 +16,7 @@ __all__ = [
     "NoteController",
     "NoteExportController",
     "NoteGenerator",
+    "NoteGenerationError",
     "NoteType",
     "Phase1Controllers",
     "SessionInfo",

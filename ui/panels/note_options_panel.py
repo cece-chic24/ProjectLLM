@@ -5,11 +5,12 @@ from __future__ import annotations
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from app.controllers import NoteController, NoteType, TranscriptResult
+from app.controllers import NoteController, NoteGenerationError, NoteType, TranscriptResult
 
 
 class NoteOptionsPanel(QWidget):
     note_requested = Signal(object)
+    note_failed = Signal(str)
 
     def __init__(self, note_controller: NoteController, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -43,6 +44,13 @@ class NoteOptionsPanel(QWidget):
             self._status_label.setText("Load a transcript first.")
             return
 
-        response = self._note_controller.generate_note(self._transcript, self._selected_note_type())
-        self.note_requested.emit(response)
+        try:
+            response = self._note_controller.generate_note(self._transcript, self._selected_note_type())
+        except NoteGenerationError as exc:
+            message = str(exc) or "Note generation failed."
+            self._status_label.setText(message)
+            self.note_failed.emit(message)
+            return
 
+        self._status_label.setText("Note generated.")
+        self.note_requested.emit(response)

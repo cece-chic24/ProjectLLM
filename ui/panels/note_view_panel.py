@@ -36,8 +36,13 @@ class NoteViewPanel(QWidget):
         self._text_edit.setPlainText(json.dumps(content, indent=2, sort_keys=True))
         self._export_button.setEnabled(True)
 
+    def set_error(self, message: str) -> None:
+        self._note = None
+        self._meta_label.setText("Note generation failed.")
+        self._text_edit.setPlainText(message)
+        self._export_button.setEnabled(False)
+
     def _export_note(self) -> None:
         if self._note is None:
             return
         self._export_controller.export_note(self._note)
-

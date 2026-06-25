@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self) -> None:
         self._input_panel.transcript_ready.connect(self._handle_transcript_ready)
         self._note_options_panel.note_requested.connect(self._handle_note_ready)
+        self._note_options_panel.note_failed.connect(self._handle_note_failed)
 
     def _ensure_session(self) -> SessionInfo:
         if self._current_session is None:
@@ -98,6 +99,9 @@ class MainWindow(QMainWindow):
 
     def _handle_note_ready(self, note: object) -> None:
         self._note_view_panel.set_note(note)
+
+    def _handle_note_failed(self, message: str) -> None:
+        self._note_view_panel.set_error(message)
 
     def _confirm_delete_session(self) -> None:
         if self._current_session is None:

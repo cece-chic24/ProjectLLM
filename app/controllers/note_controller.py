@@ -28,6 +28,9 @@ class NoteController:
         request = NoteGenerationRequest(transcript=transcript, note_type=note_type)
         try:
             return self._note_generator.generate(request)
-        except (AzureOpenAIConfigurationError, NoteGenerationError):
+        except AzureOpenAIConfigurationError as exc:
+            raise NoteGenerationError(
+                "Note generation is not configured. Add your Azure OpenAI settings to .env and restart the app."
+            ) from exc
+        except NoteGenerationError:
             raise
-
