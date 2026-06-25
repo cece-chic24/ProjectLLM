@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["core", "notes", "storage", "transcription"]
+include = ["app", "app.controllers", "core", "notes", "storage", "transcription"]
 
 [project.optional-dependencies]
 dev = [
