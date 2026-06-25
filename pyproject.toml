@@ -8,10 +8,12 @@ version = "0.1.0"
 description = "Desktop transcription and AI notes app rebuild."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-dependencies = []
+dependencies = [
+    "faster-whisper>=1.2.1",
+]
 
-[tool.setuptools]
-packages = []
+[tool.setuptools.packages.find]
+include = ["core", "transcription"]
 
 [project.optional-dependencies]
 dev = [
