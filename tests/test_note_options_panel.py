@@ -46,6 +46,7 @@ class NoteOptionsPanelTests(unittest.TestCase):
         panel._generate_note()
 
         self.assertEqual(controller.calls, [(transcript, NoteType.SUMMARY)])
+        self.assertIs(type(controller.calls[0][1]), NoteType)
 
     def test_generate_note_displays_and_emits_generation_failure(self) -> None:
         panel = NoteOptionsPanel(FailingNoteController())  # type: ignore[arg-type]

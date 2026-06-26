@@ -37,7 +37,7 @@ class NoteOptionsPanel(QWidget):
         self._status_label.setText("Ready to generate notes.")
 
     def _selected_note_type(self) -> NoteType:
-        return self._type_combo.currentData()
+        return NoteType(self._type_combo.currentData())
 
     def _generate_note(self) -> None:
         if self._transcript is None:
