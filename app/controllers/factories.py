@@ -6,8 +6,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from core.models import SessionInfo
-from notes.azure_openai_note_generator import AzureOpenAINoteGenerator
-from notes.note_types import NoteGenerationRequest, NoteGenerationResponse
 from transcription.faster_whisper_transcriber import FasterWhisperTranscriber
 
 from app.controllers.note_controller import NoteController
@@ -28,18 +26,6 @@ class Phase1Controllers:
     export: NoteExportController
 
 
-class LazyAzureOpenAINoteGenerator:
-    """Construct the Azure client only when the user generates a note."""
-
-    def __init__(self) -> None:
-        self._generator: AzureOpenAINoteGenerator | None = None
-
-    def generate(self, request: NoteGenerationRequest) -> NoteGenerationResponse:
-        if self._generator is None:
-            self._generator = AzureOpenAINoteGenerator()
-        return self._generator.generate(request)
-
-
 def create_phase1_controllers(
     ensure_session: EnsureSession,
     current_session: CurrentSessionProvider,
@@ -58,6 +44,6 @@ def create_phase1_controllers(
             transcription_factory=transcription_factory,
             before_transcribe=ensure_session,
         ),
-        note=NoteController(LazyAzureOpenAINoteGenerator()),
+        note=NoteController(),
         export=NoteExportController(current_session),
     )

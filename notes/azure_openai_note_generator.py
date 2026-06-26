@@ -6,6 +6,7 @@ import json
 import os
 
 from core.errors import AzureOpenAIConfigurationError, NoteGenerationError
+from notes.base import NoteGenerator
 from notes.note_types import NoteGenerationRequest, NoteGenerationResponse
 from notes.prompt_builder import build_note_prompt
 
@@ -18,7 +19,7 @@ REQUIRED_ENV_VARS = (
 )
 
 
-class AzureOpenAINoteGenerator:
+class AzureOpenAINoteGenerator(NoteGenerator):
     """Generate notes using Azure OpenAI chat completions."""
 
     def __init__(self) -> None:

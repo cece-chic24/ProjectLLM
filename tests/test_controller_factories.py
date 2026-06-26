@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+import os
 from unittest.mock import patch
 
 from app.controllers import NoteType, SessionInfo, TranscriptResult, create_phase1_controllers
@@ -65,8 +66,9 @@ class ControllerFactoryTests(unittest.TestCase):
             return session
 
         with (
+            patch.dict(os.environ, {"NOTE_PROVIDER": "azure"}, clear=False),
             patch("app.controllers.factories.FasterWhisperTranscriber", FakeTranscriber),
-            patch("app.controllers.factories.AzureOpenAINoteGenerator", FakeAzureGenerator),
+            patch("app.controllers.note_controller.AzureOpenAINoteGenerator", FakeAzureGenerator),
         ):
             controllers = create_phase1_controllers(ensure_session, lambda: session)
 
@@ -94,7 +96,10 @@ class ControllerFactoryTests(unittest.TestCase):
         self.assertEqual(response, NoteGenerationResponse(NoteType.SUMMARY, {"summary": "Hello"}, "fake-model"))
 
     def test_note_generator_is_lazy(self) -> None:
-        with patch("app.controllers.factories.AzureOpenAINoteGenerator", FakeAzureGenerator):
+        with (
+            patch.dict(os.environ, {"NOTE_PROVIDER": "azure"}, clear=False),
+            patch("app.controllers.note_controller.AzureOpenAINoteGenerator", FakeAzureGenerator),
+        ):
             controllers = create_phase1_controllers(
                 lambda: SimpleNamespace(),
                 lambda: None,
@@ -102,6 +107,29 @@ class ControllerFactoryTests(unittest.TestCase):
 
         self.assertEqual(FakeAzureGenerator.created, 0)
         self.assertIsNotNone(controllers.note)
+
+    def test_fake_note_generator_can_be_selected_by_configuration(self) -> None:
+        transcript = TranscriptResult(
+            source_path=Path("sample.wav"),
+            text="A local transcript",
+            language="en",
+            language_probability=0.9,
+            segments=[],
+            model_size="base",
+            device="cpu",
+            compute_type="int8",
+        )
+
+        with patch.dict(os.environ, {"NOTE_PROVIDER": "fake"}, clear=False):
+            controllers = create_phase1_controllers(
+                lambda: SimpleNamespace(),
+                lambda: None,
+            )
+            response = controllers.note.generate_note(transcript, NoteType.SUMMARY)
+
+        self.assertEqual(response.model, "fake-note-generator")
+        self.assertEqual(response.note_type, NoteType.SUMMARY)
+        self.assertIn("local transcript", response.content["transcript_preview"].lower())
 
 
 if __name__ == "__main__":
