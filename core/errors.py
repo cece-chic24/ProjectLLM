@@ -9,6 +9,10 @@ class TranscriptionError(Exception):
     """Raised when transcription fails."""
 
 
+class AudioRecordingError(Exception):
+    """Raised when microphone audio recording fails."""
+
+
 class AzureOpenAIConfigurationError(Exception):
     """Raised when Azure OpenAI configuration is missing or invalid."""
 
