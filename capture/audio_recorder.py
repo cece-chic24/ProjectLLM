@@ -32,16 +32,22 @@ class MicAudioRecorder:
 
     def start(self) -> None:
         """Start recording microphone input to the configured WAV path."""
+        print(f"MicAudioRecorder.start: requested output {self._output_path}", flush=True)
         if self._stream is not None:
             raise AudioRecordingError("Audio recording is already in progress.")
 
+        print("MicAudioRecorder.start: loading audio backend", flush=True)
         audio_backend = self._load_audio_backend()
+        print("MicAudioRecorder.start: loading file backend", flush=True)
         file_backend = self._load_file_backend()
+        print("MicAudioRecorder.start: checking microphone input device", flush=True)
         self._ensure_input_device(audio_backend)
 
+        print(f"MicAudioRecorder.start: creating output folder {self._output_path.parent}", flush=True)
         self._output_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
+            print("MicAudioRecorder.start: opening WAV file", flush=True)
             self._file = file_backend.SoundFile(
                 self._output_path,
                 mode="w",
@@ -49,29 +55,40 @@ class MicAudioRecorder:
                 channels=self._channels,
                 subtype="PCM_16",
             )
+            print("MicAudioRecorder.start: constructing sounddevice InputStream", flush=True)
             self._stream = audio_backend.InputStream(
                 samplerate=self._samplerate,
                 channels=self._channels,
                 dtype=self._dtype,
                 callback=self._write_audio,
             )
+            print("MicAudioRecorder.start: starting sounddevice stream", flush=True)
             self._stream.start()
+            print("MicAudioRecorder.start: stream started", flush=True)
         except Exception as exc:
+            print(f"MicAudioRecorder.start: failed: {exc}", flush=True)
             self._close_resources()
             raise AudioRecordingError(f"Failed to start audio recording: {exc}") from exc
 
     def stop(self) -> None:
         """Stop recording and close the WAV file."""
+        print("MicAudioRecorder.stop: requested", flush=True)
         if self._stream is None and self._file is None:
+            print("MicAudioRecorder.stop: nothing to stop", flush=True)
             return
 
         try:
             if self._stream is not None:
+                print("MicAudioRecorder.stop: stopping stream", flush=True)
                 self._stream.stop()
+                print("MicAudioRecorder.stop: closing stream", flush=True)
                 self._stream.close()
             if self._file is not None:
+                print("MicAudioRecorder.stop: closing WAV file", flush=True)
                 self._file.close()
+            print("MicAudioRecorder.stop: stopped", flush=True)
         except Exception as exc:
+            print(f"MicAudioRecorder.stop: failed: {exc}", flush=True)
             raise AudioRecordingError(f"Failed to stop audio recording: {exc}") from exc
         finally:
             self._stream = None

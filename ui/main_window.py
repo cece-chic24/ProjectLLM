@@ -18,6 +18,7 @@ from ui.panels.note_options_panel import NoteOptionsPanel
 from ui.panels.note_view_panel import NoteViewPanel
 from ui.panels.session_cleanup_dialog import SessionCleanupDialog
 from ui.panels.transcript_panel import TranscriptPanel
+from ui.workers import BackgroundTask
 
 
 class MainWindow(QMainWindow):
@@ -42,7 +43,11 @@ class MainWindow(QMainWindow):
         self._connect_signals()
 
     def _build_ui(self) -> None:
-        self._input_panel = InputPanel(self._controllers.transcription, self)
+        self._input_panel = InputPanel(
+            self._controllers.transcription,
+            parent=self,
+            task_factory=BackgroundTask,
+        )
         self._transcript_panel = TranscriptPanel(parent=self)
         self._note_options_panel = NoteOptionsPanel(self._controllers.note, self)
         self._note_view_panel = NoteViewPanel(self._controllers.export, self)

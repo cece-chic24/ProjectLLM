@@ -1,6 +1,6 @@
 """Thin application controllers."""
 
-from core.errors import GeminiConfigurationError, NoteGenerationError
+from core.errors import AudioRecordingError, GeminiConfigurationError, NoteGenerationError
 from core.models import NoteType, SessionInfo, TranscriptResult, TranscriptSegment
 
 from app.controllers.factories import Phase1Controllers, create_phase1_controllers
@@ -19,6 +19,7 @@ from app.controllers.workspace_controller import WorkspaceController
 
 __all__ = [
     "GeminiConfigurationError",
+    "AudioRecordingError",
     "NoteController",
     "NoteExportController",
     "NoteGenerator",
