@@ -28,6 +28,7 @@ class FakeAudioBackend:
     def __init__(self, *, input_available: bool = True) -> None:
         self.input_available = input_available
         self.streams: list[FakeStream] = []
+        self.last_input_stream_kwargs: dict[str, object] | None = None
 
     def query_devices(self, kind: str | None = None):
         if not self.input_available:
@@ -35,6 +36,7 @@ class FakeAudioBackend:
         return {"name": "Fake microphone", "max_input_channels": 1}
 
     def InputStream(self, **kwargs):
+        self.last_input_stream_kwargs = kwargs
         stream = FakeStream(kwargs["callback"])
         self.streams.append(stream)
         return stream
@@ -101,6 +103,23 @@ class MicAudioRecorderTests(unittest.TestCase):
 
         with self.assertRaisesRegex(AudioRecordingError, "No microphone input device"):
             recorder.start()
+
+    def test_start_passes_configured_device_to_input_stream(self) -> None:
+        audio_backend = FakeAudioBackend()
+        file_backend = FakeFileBackend()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / "session" / "mic.wav"
+            recorder = MicAudioRecorder(
+                output_path,
+                device=9,
+                audio_backend=audio_backend,
+                file_backend=file_backend,
+            )
+
+            recorder.start()
+
+        self.assertEqual(audio_backend.last_input_stream_kwargs["device"], 9)
 
 
 if __name__ == "__main__":

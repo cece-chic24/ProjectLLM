@@ -18,6 +18,7 @@ class MicAudioRecorder:
         samplerate: int = 44100,
         channels: int = 1,
         dtype: str = "float32",
+        device: int | str | None = None,
         audio_backend: Any | None = None,
         file_backend: Any | None = None,
     ) -> None:
@@ -25,6 +26,7 @@ class MicAudioRecorder:
         self._samplerate = samplerate
         self._channels = channels
         self._dtype = dtype
+        self._device = device
         self._audio_backend = audio_backend
         self._file_backend = file_backend
         self._stream: Any | None = None
@@ -60,6 +62,7 @@ class MicAudioRecorder:
                 samplerate=self._samplerate,
                 channels=self._channels,
                 dtype=self._dtype,
+                device=self._device,
                 callback=self._write_audio,
             )
             print("MicAudioRecorder.start: starting sounddevice stream", flush=True)

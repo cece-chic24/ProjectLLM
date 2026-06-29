@@ -23,8 +23,9 @@ class FakeTranscriptionProvider(TranscriptionProvider):
 class FakeAudioRecorder:
     instances: list["FakeAudioRecorder"] = []
 
-    def __init__(self, output_path: Path) -> None:
+    def __init__(self, output_path: Path, *, device: int | str | None = None) -> None:
         self.output_path = output_path
+        self.device = device
         self.started = False
         self.stopped = False
         self.__class__.instances.append(self)
@@ -94,6 +95,34 @@ class TranscriptionControllerTests(unittest.TestCase):
         self.assertTrue(FakeAudioRecorder.instances[0].stopped)
         self.assertEqual(provider.calls, [Path("sessions/session-1/recording.wav")])
         self.assertEqual(actual, result)
+
+    def test_recording_device_override_is_passed_to_audio_recorder(self) -> None:
+        result = TranscriptResult(
+            source_path=Path("sessions/session-1/recording.wav"),
+            text="Hello",
+            language="en",
+            language_probability=0.9,
+            segments=[],
+            model_size="small",
+            device="cpu",
+            compute_type="int8",
+        )
+        provider = FakeTranscriptionProvider(result)
+        session = SessionInfo(
+            session_id="session-1",
+            created_at=datetime(2026, 6, 26, 12, 0, 0),
+            paths={"session_dir": Path("sessions/session-1")},
+        )
+        FakeAudioRecorder.instances = []
+        controller = TranscriptionController(
+            provider,
+            before_transcribe=lambda: session,
+            audio_recorder_factory=FakeAudioRecorder,
+        )
+
+        controller.start_recording(device=9)
+
+        self.assertEqual(FakeAudioRecorder.instances[0].device, 9)
 
 
 if __name__ == "__main__":

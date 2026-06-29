@@ -13,7 +13,7 @@ from transcription.base import TranscriptionProvider
 
 TranscriptionFactory = Callable[..., TranscriptionProvider]
 BeforeTranscribe = Callable[[], SessionInfo]
-AudioRecorderFactory = Callable[[Path], MicAudioRecorder]
+AudioRecorderFactory = Callable[..., MicAudioRecorder]
 
 
 class TranscriptionController:
@@ -48,7 +48,7 @@ class TranscriptionController:
         except TranscriptionError:
             raise
 
-    def start_recording(self) -> Path:
+    def start_recording(self, device: int | str | None = None) -> Path:
         print("TranscriptionController.start_recording: requested", flush=True)
         if self._audio_recorder is not None:
             raise AudioRecordingError("Audio recording is already in progress.")
@@ -59,8 +59,9 @@ class TranscriptionController:
         session = self._before_transcribe()
         recording_path = session.paths["session_dir"] / "recording.wav"
         print(f"TranscriptionController.start_recording: recording path {recording_path}", flush=True)
+        print(f"TranscriptionController.start_recording: device {device!r}", flush=True)
         print("TranscriptionController.start_recording: creating recorder", flush=True)
-        recorder = self._audio_recorder_factory(recording_path)
+        recorder = self._audio_recorder_factory(recording_path, device=device)
         print("TranscriptionController.start_recording: starting recorder", flush=True)
         recorder.start()
         print("TranscriptionController.start_recording: recorder started", flush=True)
