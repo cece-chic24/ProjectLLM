@@ -8,6 +8,40 @@ from typing import Any
 from core.errors import AudioRecordingError
 
 
+def select_input_device(audio_backend: Any) -> int | str | None:
+    """Pick a reliable input device, preferring WASAPI over the system default's API."""
+    try:
+        devices = audio_backend.query_devices()
+        hostapis = audio_backend.query_hostapis()
+        default_input = audio_backend.default.device[0]
+    except Exception:
+        return None
+
+    if default_input is None or default_input < 0:
+        return None
+
+    default_name = devices[default_input]["name"]
+
+    wasapi_index = None
+    for idx, hostapi in enumerate(hostapis):
+        if "wasapi" in hostapi["name"].lower():
+            wasapi_index = idx
+            break
+
+    if wasapi_index is None:
+        return default_input
+
+    for idx, dev in enumerate(devices):
+        if (
+            dev["hostapi"] == wasapi_index
+            and dev["max_input_channels"] > 0
+            and (dev["name"].startswith(default_name.rstrip()) or default_name.rstrip().startswith(dev["name"].rstrip()))
+        ):
+            return idx
+
+    return default_input
+
+
 class MicAudioRecorder:
     """Record microphone input to a WAV file."""
 
@@ -31,6 +65,12 @@ class MicAudioRecorder:
         self._file_backend = file_backend
         self._stream: Any | None = None
         self._file: Any | None = None
+        self._level: float = 0.0
+
+    @property
+    def current_level(self) -> float:
+        """Most recent audio input level, roughly 0.0 (silent) to 1.0 (loud)."""
+        return self._level
 
     def start(self) -> None:
         """Start recording microphone input to the configured WAV path."""
@@ -40,6 +80,9 @@ class MicAudioRecorder:
 
         print("MicAudioRecorder.start: loading audio backend", flush=True)
         audio_backend = self._load_audio_backend()
+        if self._device is None:
+            self._device = select_input_device(audio_backend)
+            print(f"MicAudioRecorder.start: selected input device {self._device!r}", flush=True)
         print("MicAudioRecorder.start: loading file backend", flush=True)
         file_backend = self._load_file_backend()
         print("MicAudioRecorder.start: checking microphone input device", flush=True)
@@ -47,6 +90,15 @@ class MicAudioRecorder:
 
         print(f"MicAudioRecorder.start: creating output folder {self._output_path.parent}", flush=True)
         self._output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if self._device is not None:
+            try:
+                device_info = audio_backend.query_devices(self._device)
+                native_rate = int(device_info["default_samplerate"])
+                print(f"MicAudioRecorder.start: using device native sample rate {native_rate}", flush=True)
+                self._samplerate = native_rate
+            except Exception as exc:
+                print(f"MicAudioRecorder.start: could not read device sample rate: {exc}", flush=True)
 
         try:
             print("MicAudioRecorder.start: opening WAV file", flush=True)
@@ -96,6 +148,7 @@ class MicAudioRecorder:
         finally:
             self._stream = None
             self._file = None
+            self._level = 0.0
 
     def _write_audio(
         self,
@@ -109,6 +162,15 @@ class MicAudioRecorder:
         if self._file is None:
             raise AudioRecordingError("Audio recording file is not open.")
         self._file.write(indata)
+        self._update_level(indata)
+
+    def _update_level(self, indata: Any) -> None:
+        try:
+            import numpy as np
+            rms = float(np.sqrt(np.mean(np.square(indata))))
+        except Exception:
+            rms = 0.0
+        self._level = max(0.0, min(rms * 6, 1.0))
 
     def _ensure_input_device(self, audio_backend: Any) -> None:
         try:

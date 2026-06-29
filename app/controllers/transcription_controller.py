@@ -68,6 +68,10 @@ class TranscriptionController:
         self._audio_recorder = recorder
         self._recording_path = recording_path
         return recording_path
+    def current_recording_level(self) -> float:
+        if self._audio_recorder is None:
+            return 0.0
+        return self._audio_recorder.current_level
 
     def stop_recording(
         self,
